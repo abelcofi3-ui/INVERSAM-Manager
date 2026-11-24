@@ -1,1 +1,14 @@
-[]
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "hn.inversam.manager",
+      "sha256_cert_fingerprints": [
+        "DF:95:64:F5:5D:F5:BD:DA:17:B5:55:50:C7:49:85:82:25:4A:F9:5B:F9:87:EA:41:5B:F2:B7:98:8C:B8:CC:54"
+      ]
+    }
+  }
+]
