@@ -1,0 +1,87 @@
+# Compila el APK de Android en GitHub y lo guarda en el repositorio:
+#   public/descargas/inversam-manager.apk  (se descarga desde /instalar al desplegar el sitio)
+#   public/.well-known/assetlinks.json     (abre la app sin barra de direcciones)
+#
+# Se ejecuta en cada push a main o manualmente (Actions → APK Android → Run workflow).
+# Requiere los secretos ANDROID_KEYSTORE_BASE64 y ANDROID_KEYSTORE_PASSWORD (ver android/README.md)
+# para firmar SIEMPRE con la misma llave. Variable opcional del repositorio: INVERSAM_URL.
+name: APK Android
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "public/descargas/**"
+      - "public/.well-known/**"
+      - "**.md"
+  workflow_dispatch:
+    inputs:
+      url:
+        description: "Dirección del sistema (https://...). Vacío = la app la pide al abrir."
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-apk
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restaurar llave de firma
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ] || [ -z "$KEYSTORE_PASS" ]; then
+            echo "::error::Faltan los secretos ANDROID_KEYSTORE_BASE64 y ANDROID_KEYSTORE_PASSWORD (Settings → Secrets and variables → Actions)."
+            exit 1
+          fi
+          mkdir -p android/keystore
+          echo "$KEYSTORE_B64" | base64 -d > android/keystore/inversam-release.jks
+          printf "storeFile=keystore/inversam-release.jks\nstorePassword=%s\nkeyAlias=inversam\nkeyPassword=%s\n" "$KEYSTORE_PASS" "$KEYSTORE_PASS" > android/keystore.properties
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.10.2"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Compilar APK
+        env:
+          INVERSAM_URL: ${{ github.event.inputs.url || vars.INVERSAM_URL }}
+        run: node scripts/build-apk.mjs "$INVERSAM_URL"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: inversam-manager-apk
+          path: |
+            public/descargas/inversam-manager.apk
+            public/.well-known/assetlinks.json
+
+      - name: Guardar APK en el repositorio
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/descargas/inversam-manager.apk public/.well-known/assetlinks.json
+          if git diff --cached --quiet; then
+            echo "Sin cambios en el APK."
+          else
+            git commit -m "APK Android (${GITHUB_SHA::7}) [skip ci]"
+            git push
+          fi

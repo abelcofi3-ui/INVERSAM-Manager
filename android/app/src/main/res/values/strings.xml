@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">INVERSAM</string>
+    <string name="brand">INVERSAM</string>
+    <string name="setup_intro">Ingrese la dirección del sistema INVERSAM Manager que le dio el administrador.</string>
+    <string name="setup_hint">inversam.ejemplo.com</string>
+    <string name="setup_connect">Conectar</string>
+    <string name="setup_checking">Verificando…</string>
+    <string name="setup_invalid">Escriba una dirección válida que empiece con https://</string>
+    <string name="setup_unreachable">No se pudo conectar con INVERSAM Manager en esa dirección. Verifique la dirección y su conexión a internet.</string>
+    <string name="shortcut_change_server">Cambiar servidor</string>
+</resources>

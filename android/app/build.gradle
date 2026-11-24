@@ -1,0 +1,60 @@
+plugins {
+    id "com.android.application"
+}
+
+// Dirección del sistema publicada (p. ej. https://inversam.vercel.app).
+// Opcional: si se deja vacía, la app la pide la primera vez que se abre.
+//   gradle assembleRelease -PinversamUrl=https://inversam.vercel.app
+def inversamUrl = (project.findProperty("inversamUrl") ?: "").toString().trim()
+
+// Firma: android/keystore.properties (no se sube al repositorio). Sin ella se firma en modo debug.
+def keystorePropsFile = rootProject.file("keystore.properties")
+def keystoreProps = new Properties()
+if (keystorePropsFile.exists()) {
+    keystorePropsFile.withInputStream { keystoreProps.load(it) }
+}
+
+android {
+    namespace "hn.inversam.manager"
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "hn.inversam.manager"
+        minSdk 23
+        targetSdk 35
+        versionCode((project.findProperty("versionCode") ?: "1").toInteger())
+        versionName((project.findProperty("versionName") ?: "1.0.0").toString())
+        buildConfigField "String", "DEFAULT_URL", "\"${inversamUrl}\""
+    }
+
+    signingConfigs {
+        release {
+            if (keystorePropsFile.exists()) {
+                storeFile rootProject.file(keystoreProps["storeFile"])
+                storePassword keystoreProps["storePassword"]
+                keyAlias keystoreProps["keyAlias"]
+                keyPassword keystoreProps["keyPassword"]
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig keystorePropsFile.exists() ? signingConfigs.release : signingConfigs.debug
+        }
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation "com.google.androidbrowserhelper:androidbrowserhelper:2.5.0"
+}
